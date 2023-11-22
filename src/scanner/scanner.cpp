@@ -28,7 +28,9 @@ class scanCallbacks : public NimBLEScanCallbacks
                 TestMessageWithOptions decoded = TestMessageWithOptions_init_zero;
                 if (pb_decode(&istream, &TestMessageWithOptions_msg, &decoded))
                 {
-                    Serial.printf("pb_decode:%u:%u '%s'\n", i, advertisedDevice->getManufacturerData(i).length(), decoded.str);
+                    char *macAddr = NimBLEUtils::buildHexData(NULL, decoded.mac.bytes, decoded.mac.size);
+                    Serial.printf("pb_decode:%u:%u mac=%s str='%s'\n", i, advertisedDevice->getManufacturerData(i).length(), macAddr, decoded.str);
+                    free(macAddr);
                 }
             }
         }
