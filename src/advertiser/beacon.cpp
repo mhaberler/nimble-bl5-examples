@@ -3,13 +3,16 @@
 
 #include "NimBLEDevice.h"
 #include <appearance.hpp>
-
+#include "pb_encode.h"
+#include "pio_with_options.pb.h"
+#define BUFFERSIZE 2048 // > CONFIG_BT_NIMBLE_MAX_EXT_ADV_DATA_LEN
 
 static NimBLEUUID dataUuid(SERVICE_UUID);
 static NimBLEDevice dev;
 static char g_devName[32] = {0};
 static std::string adr;
 long unsigned int start_millis;
+int cycle = 0;
 
 bool legacy_advertising = LEGACY_ADVERTISING;
 static NimBLEExtAdvertisement *advData;
@@ -48,7 +51,7 @@ const std::string beacon_setup(void)
   return result;
 }
 
-void beacon_update_manufacturer_data(const char *data, size_t size)
+void beacon_update_manufacturer_data(const uint8_t *data, size_t size)
 {
   if (pAdvertising->isAdvertising())
   {
@@ -75,31 +78,33 @@ void beacon_update_manufacturer_data(const char *data, size_t size)
   pAdvertising->setInstanceData(0, *advData);
 
   bool rc = pAdvertising->start(0);
-  printf("started advertising: %s\n", rc ? "OK" : "FAILED");
+  printf("started advertising %d: %s\n", cycle, rc ? "OK" : "FAILED");
 }
 
 const char *mfd;
+uint8_t *buffer;
 
 void setup()
 {
   delay(3000);
   Serial.begin(115200);
-  if (legacy_advertising)
-  {
-    mfd = "\x11\x47hi there";
-  }
-  else
-  {
-    mfd =
-        "\x11\x47The quick brown fox jumps over the lazy dog The quick "
-        "brown fox jumps over the lazy dog";
-  }
-  printf("startup: legacy_advertising=%d mfd='%s'\n", legacy_advertising, mfd);
+  printf("startup: legacy_advertising=%d\n", legacy_advertising);
+  buffer = (uint8_t*)malloc(BUFFERSIZE);
+  assert(buffer != NULL);
+
   adr = beacon_setup();
 }
 
 void loop()
 {
-  beacon_update_manufacturer_data(mfd, strlen(mfd));
+  pb_ostream_t ostream;
+
+  TestMessageWithOptions msg = TestMessageWithOptions_init_zero;
+  snprintf(msg.str, sizeof(msg.str), "advertisement cycle %d", ++cycle);
+  ostream = pb_ostream_from_buffer(buffer, BUFFERSIZE);
+  if (pb_encode(&ostream, &TestMessageWithOptions_msg, &msg))
+  {
+    beacon_update_manufacturer_data(buffer, ostream.bytes_written);
+  }
   delay(5000);
 }
