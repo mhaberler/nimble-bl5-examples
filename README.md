@@ -40,5 +40,7 @@ legacy advertisements with their 23 byte limit on manufacturer data.
 
 The `protobuf` branch shows how to advertise and decode protobuf messages created with [Nanopb](https://jpa.kapsi.fi/nanopb/).
 
+The example adds the MAC address as a protobuf payload field. This helps getting the MAC address past the Apple BLE APIs which hide the MAC address.
+
 
 
