@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #include <NimBLEDevice.h>
+#include "pb_decode.h"
+#include "pio_with_options.pb.h"
 
 static NimBLEAdvertisedDevice *advDevice;
 static uint32_t scanTime = 3600 * 1000; // In seconds, 0 = scan forever
@@ -12,12 +14,23 @@ class scanCallbacks : public NimBLEScanCallbacks
     {
         if (advertisedDevice->isAdvertisingService(NimBLEUUID(SERVICE_UUID)))
         {
-            Serial.printf("\n onDiscovered:  %d mS %s\n", millis() - last_millis, advertisedDevice->toString().c_str());
+            Serial.printf("onDiscovered: %d mS %s\n", millis() - last_millis,
+                          advertisedDevice->toString().c_str());
+            Serial.printf("AdvLength: %u  PayloadLength %u getManufacturerDataCount %u\n",
+                          advertisedDevice->getAdvLength(), advertisedDevice->getPayloadLength(),
+                          advertisedDevice->getManufacturerDataCount());
+
             last_millis = millis();
-        }
-        else
-        {
-            Serial.printf(".");
+            for (auto i = 0; i < advertisedDevice->getManufacturerDataCount(); i++)
+            {
+                pb_istream_t istream = pb_istream_from_buffer((const pb_byte_t *)advertisedDevice->getManufacturerData(i).c_str(),
+                                                              advertisedDevice->getManufacturerData(i).length());
+                TestMessageWithOptions decoded = TestMessageWithOptions_init_zero;
+                if (pb_decode(&istream, &TestMessageWithOptions_msg, &decoded))
+                {
+                    Serial.printf("pb_decode:%u:%u '%s'\n", i, advertisedDevice->getManufacturerData(i).length(), decoded.str);
+                }
+            }
         }
     }
     void
