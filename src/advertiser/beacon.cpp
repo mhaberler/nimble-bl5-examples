@@ -53,7 +53,8 @@ void beacon_update_manufacturer_data(const char *data, size_t size)
   if (pAdvertising->isAdvertising())
   {
     printf("stopping advertising\n");
-    pAdvertising->stop();
+    assert(pAdvertising->stop(0)); // Stop advertising this instance data - we use only instance 0
+    assert(pAdvertising->removeAll()); // Stop and remove all advertising instance data
   }
 
   if (advData)
