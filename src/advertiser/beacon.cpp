@@ -89,6 +89,7 @@ void setup()
   delay(3000);
   Serial.begin(115200);
   printf("startup: legacy_advertising=%d\n", legacy_advertising);
+  printf("startup: CONFIG_BT_NIMBLE_MAX_EXT_ADV_DATA_LEN=%d\n", CONFIG_BT_NIMBLE_MAX_EXT_ADV_DATA_LEN);
   buffer = (uint8_t*)malloc(BUFFERSIZE);
   assert(buffer != NULL);
 
