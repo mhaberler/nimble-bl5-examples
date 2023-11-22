@@ -35,6 +35,11 @@ The advertiser can be made to use the `coded PHY` (aka "long range phy") as seco
 Setting `LEGACY_ADVERTISING=true` will revert to BLE4.2 behavior, i.e
 legacy advertisements with their 23 byte limit on manufacturer data.
 
+
+## Protobuf-encoded advertisements
+
+The `protobuf` branch shows how to advertise and decode protobuf messages created with [Nanopb](https://jpa.kapsi.fi/nanopb/).
+
 # Open questions
 The advertiser reports an MTU of 255 - I'm unclear how this correlates to the `CONFIG_BT_NIMBLE_MAX_EXT_ADV_DATA_LEN` define of 1650 bytes; hints welcome.
 
