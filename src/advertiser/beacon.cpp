@@ -4,7 +4,6 @@
 #include "NimBLEDevice.h"
 #include <appearance.hpp>
 
-
 static NimBLEUUID dataUuid(SERVICE_UUID);
 static NimBLEDevice dev;
 static char g_devName[32] = {0};
@@ -53,7 +52,7 @@ void beacon_update_manufacturer_data(const char *data, size_t size)
   if (pAdvertising->isAdvertising())
   {
     printf("stopping advertising\n");
-    assert(pAdvertising->stop(0)); // Stop advertising this instance data - we use only instance 0
+    assert(pAdvertising->stop(0));     // Stop advertising this instance data - we use only instance 0
     assert(pAdvertising->removeAll()); // Stop and remove all advertising instance data
   }
 
@@ -91,10 +90,10 @@ void setup()
   else
   {
     mfd =
-        "\x11\x47The quick brown fox jumps over the lazy dog The quick "
-        "brown fox jumps over the lazy dog";
+        "\x11\x47The quick brown fox jumps over the lazy dog";
   }
   printf("startup: legacy_advertising=%d mfd='%s'\n", legacy_advertising, mfd);
+  printf("startup: CONFIG_BT_NIMBLE_MAX_EXT_ADV_DATA_LEN=%d\n", CONFIG_BT_NIMBLE_MAX_EXT_ADV_DATA_LEN);
   adr = beacon_setup();
 }
 
