@@ -101,7 +101,10 @@ void loop()
   pb_ostream_t ostream;
 
   TestMessageWithOptions msg = TestMessageWithOptions_init_zero;
+  memcpy(msg.mac.bytes, adr.c_str(), 6);
+  msg.mac.size = 6;
   snprintf(msg.str, sizeof(msg.str), "advertisement cycle %d", ++cycle);
+
   ostream = pb_ostream_from_buffer(buffer, BUFFERSIZE);
   if (pb_encode(&ostream, &TestMessageWithOptions_msg, &msg))
   {
