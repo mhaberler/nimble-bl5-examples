@@ -100,5 +100,5 @@ void loop()
   {
     beacon_update_manufacturer_data(buffer, ostream.bytes_written + 2);
   }
-  delay(5000);
+  delay(1000);
 }
