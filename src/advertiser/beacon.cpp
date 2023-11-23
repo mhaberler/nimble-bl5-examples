@@ -105,10 +105,11 @@ void loop()
   msg.mac.size = 6;
   snprintf(msg.str, sizeof(msg.str), "advertisement cycle %d", ++cycle);
 
-  ostream = pb_ostream_from_buffer(buffer, BUFFERSIZE);
+  *((uint16_t*)buffer) = MANUFACTURER_ID;
+  ostream = pb_ostream_from_buffer(buffer + 2, BUFFERSIZE);
   if (pb_encode(&ostream, &TestMessageWithOptions_msg, &msg))
   {
-    beacon_update_manufacturer_data(buffer, ostream.bytes_written);
+    beacon_update_manufacturer_data(buffer, ostream.bytes_written + 2);
   }
   delay(5000);
 }
