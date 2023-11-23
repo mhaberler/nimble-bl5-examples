@@ -48,7 +48,7 @@ void beacon_update_manufacturer_data(const char *data, size_t size)
   advData->clearData();
   std::string manufacturerData((char *)data, size);
   advData->setManufacturerData(manufacturerData);
-  advData->setCompleteServices16({NimBLEUUID(SERVICE_UUID)});
+  advData->setCompleteServices16({dataUuid});
   advData->setName(g_devName);
   advData->setFlags(BLE_HS_ADV_F_BREDR_UNSUP | BLE_HS_ADV_F_DISC_GEN);
   advData->setAppearance(BLE_APPEARANCE_HID_MOUSE);
