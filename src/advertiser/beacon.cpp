@@ -9,17 +9,16 @@
 
 static NimBLEUUID dataUuid(SERVICE_UUID);
 static NimBLEDevice dev;
+static NimBLEExtAdvertisement *advData;
+static NimBLEExtAdvertisement scanResponse =
+    NimBLEExtAdvertisement(BLE_HCI_LE_PHY_1M, SECONDARY_PHY);
+static NimBLEExtAdvertising *pAdvertising;
+
 static char g_devName[32] = {0};
 static std::string adr;
 long unsigned int start_millis;
 int cycle = 0;
-
 bool legacy_advertising = LEGACY_ADVERTISING;
-static NimBLEExtAdvertisement *advData;
-static NimBLEExtAdvertisement scanResponse =
-    NimBLEExtAdvertisement(BLE_HCI_LE_PHY_1M, SECONDARY_PHY);
-
-static NimBLEExtAdvertising *pAdvertising;
 
 const std::string beacon_setup(void)
 {
@@ -35,10 +34,8 @@ const std::string beacon_setup(void)
   uint16_t mtu = dev.getMTU();
   printf("MTU: %d\n", mtu);
 
-  if (pAdvertising == NULL)
-  {
-    pAdvertising = BLEDevice::getAdvertising();
-  }
+  advData = new NimBLEExtAdvertisement(BLE_HCI_LE_PHY_1M, SECONDARY_PHY);
+  pAdvertising = BLEDevice::getAdvertising();
   scanResponse.setAppearance(APPEARANCE);
   scanResponse.setFlags(BLE_HS_ADV_F_BREDR_UNSUP | BLE_HS_ADV_F_DISC_GEN);
   scanResponse.setName(g_devName);
@@ -59,13 +56,7 @@ void beacon_update_manufacturer_data(const uint8_t *data, size_t size)
     assert(pAdvertising->stop(0)); // Stop advertising this instance data - we use only instance 0
     assert(pAdvertising->removeAll()); // Stop and remove all advertising instance data
   }
-
-  if (advData)
-  {
-    delete advData;
-    advData = NULL;
-  }
-  advData = new NimBLEExtAdvertisement(BLE_HCI_LE_PHY_1M, SECONDARY_PHY);
+  advData->clearData();
   std::string manufacturerData((char *)data, size);
   advData->setManufacturerData(manufacturerData);
   advData->setCompleteServices16({NimBLEUUID(SERVICE_UUID)});
@@ -74,9 +65,7 @@ void beacon_update_manufacturer_data(const uint8_t *data, size_t size)
   advData->setAppearance(BLE_APPEARANCE_HID_MOUSE);
   advData->setLegacyAdvertising(false);
   advData->enableScanRequestCallback(true);
-
   pAdvertising->setInstanceData(0, *advData);
-
   bool rc = pAdvertising->start(0);
   printf("started advertising %d: %s\n", cycle, rc ? "OK" : "FAILED");
 }
