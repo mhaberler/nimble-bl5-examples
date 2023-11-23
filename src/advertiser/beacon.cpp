@@ -10,8 +10,6 @@
 static NimBLEUUID dataUuid(SERVICE_UUID);
 static NimBLEDevice dev;
 static NimBLEExtAdvertisement *advData;
-static NimBLEExtAdvertisement scanResponse =
-    NimBLEExtAdvertisement(BLE_HCI_LE_PHY_1M, SECONDARY_PHY);
 static NimBLEExtAdvertising *pAdvertising;
 
 static char g_devName[32] = {0};
@@ -36,12 +34,6 @@ const std::string beacon_setup(void)
 
   advData = new NimBLEExtAdvertisement(BLE_HCI_LE_PHY_1M, SECONDARY_PHY);
   pAdvertising = BLEDevice::getAdvertising();
-  scanResponse.setAppearance(APPEARANCE);
-  scanResponse.setFlags(BLE_HS_ADV_F_BREDR_UNSUP | BLE_HS_ADV_F_DISC_GEN);
-  scanResponse.setName(g_devName);
-  scanResponse.setLegacyAdvertising(false);
-  scanResponse.setScannable(true);
-  scanResponse.setConnectable(false);
 
   std::string result;
   result.assign((const char *)BLEDevice::getAddress().getNative(), 6);
@@ -59,12 +51,11 @@ void beacon_update_manufacturer_data(const uint8_t *data, size_t size)
   advData->clearData();
   std::string manufacturerData((char *)data, size);
   advData->setManufacturerData(manufacturerData);
-  advData->setCompleteServices16({NimBLEUUID(SERVICE_UUID)});
+  advData->setCompleteServices16({dataUuid});
   advData->setName(g_devName);
   advData->setFlags(BLE_HS_ADV_F_BREDR_UNSUP | BLE_HS_ADV_F_DISC_GEN);
   advData->setAppearance(BLE_APPEARANCE_HID_MOUSE);
   advData->setLegacyAdvertising(false);
-  advData->enableScanRequestCallback(true);
   pAdvertising->setInstanceData(0, *advData);
   bool rc = pAdvertising->start(0);
   printf("started advertising %d: %s\n", cycle, rc ? "OK" : "FAILED");
