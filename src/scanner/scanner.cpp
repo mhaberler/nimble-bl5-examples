@@ -33,8 +33,8 @@ void report_mopeka(const NimBLEAddress &mac,const mopekaAd_t &m) {
 }
 
 void report_tpms(const NimBLEAddress &mac,const tpmsAd_t &t) {
-    Serial.printf("tpms: %s:  press=%f temp=%f rssi=%d\n", mac.toString().c_str(),
-                  t.pressure, t.temperature, t.rssi);
+    Serial.printf("tpms: %s:  press=%f temp=%f bat=%u%% loc=%u rssi=%d\n", mac.toString().c_str(),
+                  t.pressure, t.temperature, t.batpct, t.location, t.rssi);
 }
 
 int16_t getInt16(const uint8_t *data, int index) {
@@ -51,6 +51,14 @@ int32_t getInt32(const uint8_t *data, int index) {
                (data[index+1] << 16) |
                (data[index+2] << 8) |
                (data[index+3]));
+}
+
+int32_t getInt32LE(const uint8_t *data, int index) {
+    return (int32_t)(
+               (data[index]) |
+               (data[index+1] << 8) |
+               (data[index+2] << 16) |
+               (data[index+3] << 24));
 }
 
 uint32_t getUint32(const uint8_t *data, int index) {
@@ -144,6 +152,7 @@ bool bleDeliver(const bleAdvMsg_t &msg) {
                                        (MOPEKA_TANK_LEVEL_COEFFICIENTS_PROPANE_1 * mopeka_report.raw_temp) +
                                        (MOPEKA_TANK_LEVEL_COEFFICIENTS_PROPANE_2 * mopeka_report.raw_temp *
                                         mopeka_report.raw_temp));
+                mopeka_report.rssi = msg.rssi;
                 report_mopeka(mac, mopeka_report);
                 return true;
 
@@ -151,12 +160,13 @@ bool bleDeliver(const bleAdvMsg_t &msg) {
 
         case 0x0100: { // TPMS manufacturer ID variant 1
                 tpmsAd_t tpms_report = {};
-                if (len == 16) {
-                    tpms_report.location = getUint8(data, 0) & 0x7f;
-                    tpms_report.pressure = getInt32(data, 6);
-                    tpms_report.temperature = k0 + getInt32(data, 10) / 100.0;
-                    tpms_report.batpct = getUint8(data, 14);
-                    tpms_report.status = getUint8(data, 15);
+                if (len == 18) {
+                    tpms_report.location = getUint8(data, 2) & 0x7f;
+                    tpms_report.pressure = (float)getInt32LE(data, 8) / 100000.0;
+                    tpms_report.temperature = (float)getInt32LE(data, 12) / 100.0;
+                    tpms_report.batpct = getUint8(data, 16);
+                    tpms_report.status = getUint8(data, 17);
+                    tpms_report.rssi = msg.rssi;
                     report_tpms(mac, tpms_report);
                     return true;
                 }
@@ -165,11 +175,12 @@ bool bleDeliver(const bleAdvMsg_t &msg) {
         case 0x00AC: { // TPMS manufacturer ID variant 2
                 tpmsAd_t tpms_report = {};
                 if (len == 15) {
-                    tpms_report.pressure = getInt32(data, 0);
-                    tpms_report.temperature = k0 + getInt32(data, 4) / 100.0;
+                    tpms_report.pressure = getInt32LE(data, 0);
+                    tpms_report.temperature = k0 + getInt32LE(data, 4) / 100.0;
                     tpms_report.batpct = getUint8(data, 5);
                     tpms_report.location = getUint8(data, 6) & 0x7f;
                     tpms_report.status = 0;
+                    tpms_report.rssi = msg.rssi;
                     report_tpms(mac, tpms_report);
                     return true;
                 }
@@ -196,13 +207,13 @@ class scanCallbacks : public NimBLEScanCallbacks {
             const uint8_t *data =
                 (const uint8_t *)advertisedDevice->getManufacturerData().data();
             size_t len = advertisedDevice->getManufacturerData().length();
-            bleAdvMsg_t ble_adv;
+            bleAdvMsg_t ble_adv = {};
 
             uint16_t mfid = data[1] << 8 | data[0];
             switch (mfid) {
                 // filter ads for interesing sensors
-                case 0x0499:  // Ruuvi manufacturer ID
-                case 0x0059:  // Mopeka manufacturer ID
+                // case 0x0499:  // Ruuvi manufacturer ID
+                // case 0x0059:  // Mopeka manufacturer ID
                 case 0x0100:  // TPMS manufacturer ID variant 1
                 case 0x00AC:  // TPMS manufacturer ID variant 2
 
