@@ -12,7 +12,7 @@ class scanCallbacks : public NimBLEScanCallbacks
     {
         if (true) // (advertisedDevice->isAdvertisingService(NimBLEUUID(SERVICE_UUID)))
         {
-            Serial.printf("\n onDiscovered:  %d mS %s\n", millis() - last_millis, advertisedDevice->toString().c_str());
+            Serial.printf("\n onDiscovered:  %d mS %s", millis() - last_millis, advertisedDevice->toString().c_str());
             last_millis = millis();
         }
         else
