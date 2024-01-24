@@ -212,8 +212,8 @@ class scanCallbacks : public NimBLEScanCallbacks {
             uint16_t mfid = data[1] << 8 | data[0];
             switch (mfid) {
                 // filter ads for interesing sensors
-                // case 0x0499:  // Ruuvi manufacturer ID
-                // case 0x0059:  // Mopeka manufacturer ID
+                case 0x0499:  // Ruuvi manufacturer ID
+                case 0x0059:  // Mopeka manufacturer ID
                 case 0x0100:  // TPMS manufacturer ID variant 1
                 case 0x00AC:  // TPMS manufacturer ID variant 2
 
