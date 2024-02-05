@@ -77,32 +77,51 @@ int8_t getInt8(const uint8_t *data, int index) {
     return (int8_t)((data[index]));
 }
 
-void DecodeV5(const uint8_t *data, ruuviAd_t &ra) {
+static void DecodeV5(const uint8_t *data, ruuviAd_t &ra) {
+    int16_t i16;
+    uint16_t u16;
+    uint8_t u8;
+
+    ra.availability = 0;
     ra.ruuvi_format = 5;
-    ra.temperature = (float)getInt16(data, 3) * 0.005;
-    ra.humidity = (float)getUint16(data, 5) * 0.0025;
-    ra.pressure = (float)getUint16(data, 7) / 100 + 500;
+
+    i16 = getInt16(data, 3);
+    if (i16 !=0x8000) ra.availability |= RUUVI_TEMPERATURE_AVAILABLE;
+    ra.temperature = (float) i16 * 0.005;
+
+    u16 = getUint16(data, 5);
+    if (u16 != 65535) ra.availability |= RUUVI_HUMIIDTY_AVAILABLE;
+    ra.humidity = (float)u16 * 0.0025;
+
+    u16 = getUint16(data, 7);
+    if (u16 != 65535) ra.availability |= RUUVI_PRESSURE_AVAILABLE;
+    ra.pressure = ((float)u16 + 50000.0) / 100.0;
+
     ra.accelX = getInt16(data, 9);
+    if (ra.accelX != 0x8000) ra.availability |= RUUVI_ACCELX_AVAILABLE;
     ra.accelY = getInt16(data, 11);
+    if (ra.accelY != 0x8000) ra.availability |= RUUVI_ACCELY_AVAILABLE;
     ra.accelZ = getInt16(data, 13);
-    ra.voltage = (data[15] << 3 | data[16] >> 5) + 1600;
-    ra.power = (data[16] & 0x1F) * 2 - 40;
-    ra.moveCount = getUint8(data, 17);
-    ra.sequence = getUint16(data, 18);
+    if (ra.accelZ != 0x8000) ra.availability |= RUUVI_ACCELZ_AVAILABLE;
+
+    u16 = data[15] << 3 | data[16];
+    if (u16 != 2047) ra.availability |= RUUVI_BATTERY_AVAILABLE;
+    ra.voltage = u16 + 1600;
+
+    u8 = data[16] & 0x1F;
+    if (u8 != 31) ra.availability |= RUUVI_TXPOWER_AVAILABLE;
+    ra.power = (u8) * 2 - 40;
+
+    u8 = getUint8(data, 17);
+    if (u8 != 255) ra.availability |= RUUVI_MOVEMENT_AVAILABLE;
+    ra.moveCount = u8;
+
+    u16 = getUint16(data, 18);
+    if (u16 != 65535) ra.availability |= RUUVI_SEQUENCE_AVAILABLE;
+    ra.sequence = u16;
 }
 
-void DecodeV3(const uint8_t *data, ruuviAd_t &ra) {
-    ra.ruuvi_format = 3;
-    float t = (float)(getUint8(data, 4) & 0b01111111) +
-              (float)getUint8(data, 5) / 100;
-    ra.temperature = (getUint8(data, 4) & 0b10000000) == 128 ? t * -1 : t;
-    ra.humidity = (float)getUint8(data, 3) * 0.5;
-    ra.pressure = (float)getUint16(data, 6) / 100 + 500;
-    ra.accelX = getInt16(data, 8);
-    ra.accelY = getInt16(data, 10);
-    ra.accelZ = getInt16(data, 12);
-    ra.voltage = getUint16(data, 14);
-}
+
 
 bool bleDeliver(const bleAdvMsg_t &msg) {
 
@@ -115,15 +134,14 @@ bool bleDeliver(const bleAdvMsg_t &msg) {
                 ruuviAd_t ruuvi_report = {};
 
                 ruuvi_report.rssi = msg.rssi;
-                if (data[2] == 0x3 && len > 15) {
-                    DecodeV3(data, ruuvi_report);
-                    report_ruuvi(mac, ruuvi_report);
-                    return true;
-                }
                 if (data[2] == 0x5 && len > 19) {
                     DecodeV5(data, ruuvi_report);
                     report_ruuvi(mac, ruuvi_report);
                     return true;
+                }
+                if (data[2] == 0x3 && len > 15) {
+                    log_e("upgrade your RuuviTag, this is still Version3 format");
+                    return false;
                 }
                 log_e("failed to decode ruuvi msg");
                 return false;
