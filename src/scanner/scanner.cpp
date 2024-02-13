@@ -217,9 +217,11 @@ void process_ble(void) {
         bleDeliver(msg);
     }
 }
-
+#ifdef NIMBLE_OLDAPI
+class scanCallbacks : public  NimBLEAdvertisedDeviceCallbacks {
+#else
 class scanCallbacks : public NimBLEScanCallbacks {
-
+#endif
     void onResult(NimBLEAdvertisedDevice *advertisedDevice) {
         if (advertisedDevice->haveManufacturerData()) {
             const uint8_t *data =
@@ -264,6 +266,7 @@ void loop() {
 }
 
 void setup() {
+    delay(3000);
     Serial.begin(115200);
     Serial.printf("Starting NimBLE Scanner\n");
 
@@ -271,7 +274,11 @@ void setup() {
 
     NimBLEDevice::init("");
     NimBLEScan *pScan = NimBLEDevice::getScan();
+#ifdef NIMBLE_OLDAPI
+    pScan->setAdvertisedDeviceCallbacks(new scanCallbacks());
+#else
     pScan->setScanCallbacks(new scanCallbacks());
+#endif
     pScan->setInterval(97);
     pScan->setWindow(67);
     pScan->setMaxResults(0);
